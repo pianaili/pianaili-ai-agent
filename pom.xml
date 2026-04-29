@@ -78,11 +78,17 @@
         </dependency>
         <!-- langchain4j use DashScope和dashscope-sdk-java冲突-->
         <!-- https://mvnrepository.com/artifact/dev.langchain4j/langchain4j-community-dashscope -->
-<!--        <dependency>-->
-<!--            <groupId>dev.langchain4j</groupId>-->
-<!--            <artifactId>langchain4j-community-dashscope</artifactId>-->
-<!--            <version>1.13.0-beta23</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-dashscope</artifactId>
+            <version>1.13.0-beta23</version>
+        </dependency>
+        <!--支持结构化输出-->
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-generator</artifactId>
+            <version>4.38.0</version>
+        </dependency>
     </dependencies>
 
     <build>
