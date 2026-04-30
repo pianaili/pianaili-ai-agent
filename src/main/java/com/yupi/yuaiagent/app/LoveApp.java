@@ -3,13 +3,22 @@ package com.yupi.yuaiagent.app;
 
 import com.yupi.yuaiagent.advisor.MyLoggerAdvisor;
 import com.yupi.yuaiagent.advisor.ReReadingAdvisor;
+import com.yupi.yuaiagent.chatmemory.FileBasedChatMemory;
+import com.yupi.yuaiagent.rag.LoveAppRAGCloudAdvisorConfig;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,19 +39,22 @@ public class LoveApp {
      * @param dashscopeChatModel
      */
     public LoveApp(ChatModel dashscopeChatModel) {
-        // 修改1：使用MessageWindowChatMemory替代InMemoryChatMemory
-        ChatMemory chatMemory = MessageWindowChatMemory.builder()
-                .maxMessages(10)
-                .build();
+        // 初始化基于文件的对话记忆
+        String fileDir = System.getProperty("user.dir") + "/tmp/chat-memory";
+        FileBasedChatMemory chatMemory = new FileBasedChatMemory(fileDir);
+         //修改1：使用MessageWindowChatMemory替代InMemoryChatMemory
+//        ChatMemory chatMemory = MessageWindowChatMemory.builder()
+//                .maxMessages(10)
+//                .build();
         ChatClient.Builder builder = ChatClient.builder(dashscopeChatModel);
         builder.defaultSystem(SYSTEM_PROMPT);
         builder.defaultAdvisors(
                 //修改2：MessageChatMemoryAdvisor构造函数私有化了，现在只能使用建造器模式构建
                 MessageChatMemoryAdvisor.builder(chatMemory).build(),
                 //自定义Advisor日志拦截器，按需开启
-                new MyLoggerAdvisor(),
+                new MyLoggerAdvisor()
                 //自定义增强Advisor，按需开启
-                new ReReadingAdvisor().withOrder(0)
+//                new ReReadingAdvisor().withOrder(0)
         );
         this.chatClient = builder.build();
     }
@@ -87,5 +99,42 @@ public class LoveApp {
                 .entity(LoveReport.class);
         log.info("loveReport:{}", loveReport);
         return loveReport;
+    }
+
+    @Resource
+    private VectorStore loveAppVectorStore;
+    @Resource
+    private Advisor loveAppRAGCloudAdvisor;
+
+    public String doChatWithRAG(String message,String chatId) {
+        // 1. 构建 VectorStoreDocumentRetriever
+        DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+                .vectorStore(loveAppVectorStore)      // 必填：向量存储
+                .similarityThreshold(0.75)     // 可选：相似度阈值
+                .topK(5)                       // 可选：返回 top K 条文档
+                .build();
+
+        // 2. 构建 RetrievalAugmentationAdvisor（Advisor 对象）
+        Advisor loveAppRAGLocalAdvisor = RetrievalAugmentationAdvisor.builder()
+                .documentRetriever(retriever)
+                .build();
+
+        VectorStoreDocumentRetriever vectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder().vectorStore(loveAppVectorStore).build();
+        ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                //添加本地的RAG向量知识库
+                .advisors(loveAppRAGLocalAdvisor)
+//                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))//该advisor已经不不存在了
+                //添加阿里云的RAG向量知识库
+//                .advisors(loveAppRAGCloudAdvisor)
+                .advisors(new MyLoggerAdvisor())
+                .call()
+                .chatResponse();
+        String content = response.getResult().getOutput().getText();
+        log.info("content:{}", content);
+        return content;
     }
 }
