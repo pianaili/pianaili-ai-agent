@@ -95,17 +95,11 @@
             <artifactId>kryo</artifactId>
             <version>5.6.2</version>
         </dependency>
-        <!--Markdown文档加载器-->
+        <!--Markdown文档加载器（与 spring-ai-alibaba 引入的 Spring AI 1.1.2 版本对齐）-->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
-            <version>1.0.0-M6</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.ai</groupId>
-                    <artifactId>spring-ai-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>1.1.2</version>
         </dependency>
     </dependencies>
 
