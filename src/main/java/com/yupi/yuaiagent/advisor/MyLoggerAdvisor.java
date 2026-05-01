@@ -23,7 +23,8 @@ public class MyLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
     @Override
     public int getOrder() {
-        return 0;
+        // ChatModelCallAdvisor 也是 Integer.MAX_VALUE，这里减 1 避免冲突
+        return Integer.MAX_VALUE - 1;
     }
 
     @Override

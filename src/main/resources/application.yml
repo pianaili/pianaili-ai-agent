@@ -2,7 +2,13 @@ spring:
   application:
     name: yu-ai-agent
   profiles:
-   active: local
+    active: local
+  ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        max-document-batch-size: 10 # Optional: Maximum number of documents per batch
 server:
   port: 8123
   servlet:

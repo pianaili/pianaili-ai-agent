@@ -105,6 +105,8 @@ public class LoveApp {
     private VectorStore loveAppVectorStore;
     @Resource
     private Advisor loveAppRAGCloudAdvisor;
+    @Resource
+    private VectorStore pgVectorVectorStore;
 
     public String doChatWithRAG(String message,String chatId) {
         // 1. 构建 VectorStoreDocumentRetriever
@@ -118,18 +120,26 @@ public class LoveApp {
         Advisor loveAppRAGLocalAdvisor = RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(retriever)
                 .build();
-
-        VectorStoreDocumentRetriever vectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder().vectorStore(loveAppVectorStore).build();
+        //构建pgVectorStoreDocumentRetriever对象
+        VectorStoreDocumentRetriever pgVectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
+                .vectorStore(pgVectorVectorStore)
+                .build();
+        //构建检索增强顾问
+        RetrievalAugmentationAdvisor pgVectorStoreAdvisor = RetrievalAugmentationAdvisor.builder()
+                .documentRetriever(pgVectorStoreDocumentRetriever)
+                .build();
         ChatResponse response = chatClient
                 .prompt()
                 .user(message)
                 //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 //添加本地的RAG向量知识库
-                .advisors(loveAppRAGLocalAdvisor)
+//                .advisors(loveAppRAGLocalAdvisor)
 //                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))//该advisor已经不不存在了
                 //添加阿里云的RAG向量知识库
 //                .advisors(loveAppRAGCloudAdvisor)
+                //应用RAG检索增强服务，基于PgVectorStore的向量存储
+                .advisors(pgVectorStoreAdvisor)
                 .advisors(new MyLoggerAdvisor())
                 .call()
                 .chatResponse();
