@@ -2,19 +2,17 @@ package com.yupi.yuaiagent.app;
 
 
 import com.yupi.yuaiagent.advisor.MyLoggerAdvisor;
-import com.yupi.yuaiagent.advisor.ReReadingAdvisor;
 import com.yupi.yuaiagent.chatmemory.FileBasedChatMemory;
-import com.yupi.yuaiagent.rag.LoveAppRAGCloudAdvisorConfig;
+import com.yupi.yuaiagent.rag.LoveAppRAGCustomAdvisorFactory;
+import com.yupi.yuaiagent.rag.QueryRewriter;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
@@ -107,19 +105,25 @@ public class LoveApp {
     private Advisor loveAppRAGCloudAdvisor;
     @Resource
     private VectorStore pgVectorVectorStore;
+    @Resource
+    private QueryRewriter queryRewriter;
 
     public String doChatWithRAG(String message,String chatId) {
+        //重写用户的message
+        String rewriteMessage = queryRewriter.doQueryRewrite(message);
+
         // 1. 构建 VectorStoreDocumentRetriever
         DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
                 .vectorStore(loveAppVectorStore)      // 必填：向量存储
                 .similarityThreshold(0.75)     // 可选：相似度阈值
-                .topK(5)                       // 可选：返回 top K 条文档
+                .topK(3)                       // 可选：返回 top K 条文档
                 .build();
 
         // 2. 构建 RetrievalAugmentationAdvisor（Advisor 对象）
         Advisor loveAppRAGLocalAdvisor = RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(retriever)
                 .build();
+
         //构建pgVectorStoreDocumentRetriever对象
         VectorStoreDocumentRetriever pgVectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
                 .vectorStore(pgVectorVectorStore)
@@ -130,16 +134,23 @@ public class LoveApp {
                 .build();
         ChatResponse response = chatClient
                 .prompt()
-                .user(message)
+                //输入重写后的用户消息
+                .user(rewriteMessage)
                 //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 //添加本地的RAG向量知识库
-//                .advisors(loveAppRAGLocalAdvisor)
+                .advisors(loveAppRAGLocalAdvisor)
 //                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))//该advisor已经不不存在了
                 //添加阿里云的RAG向量知识库
 //                .advisors(loveAppRAGCloudAdvisor)
                 //应用RAG检索增强服务，基于PgVectorStore的向量存储
-                .advisors(pgVectorStoreAdvisor)
+//                .advisors(pgVectorStoreAdvisor)
+                //自定义的RAG 检索增强服务（文档查询器+上下文增强）
+//                .advisors(
+//                        LoveAppRAGCustomAdvisorFactory.createLoveAppRAGCustomAdvisor(
+//                                loveAppVectorStore,"健康"
+//                        )
+//                )
                 .advisors(new MyLoggerAdvisor())
                 .call()
                 .chatResponse();

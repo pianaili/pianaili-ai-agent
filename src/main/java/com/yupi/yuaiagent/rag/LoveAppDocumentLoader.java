@@ -35,12 +35,15 @@ public class LoveAppDocumentLoader {
             Resource[] resources = resourcePatternResolver.getResources("classpath:document/*.md");
             for (Resource resource : resources) {
                 String filename = resource.getFilename();
+                //提取filename的倒数第3和倒数第2个字符作为状态标签
+                String status = filename.substring(filename.length() - 6, filename.length() - 4);
                 //Markdown文档加载器配置
                 MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
                         .withHorizontalRuleCreateDocument(true)
                         .withIncludeCodeBlock(false)
                         .withIncludeBlockquote(false)
                         .withAdditionalMetadata("filename", filename)
+                        .withAdditionalMetadata("status", status)
                         .build();
                 //new一个Markdown文档加载器
                 MarkdownDocumentReader markdownDocumentReader = new MarkdownDocumentReader(resource, config);

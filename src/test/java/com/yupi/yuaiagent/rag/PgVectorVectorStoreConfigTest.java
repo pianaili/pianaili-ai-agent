@@ -8,6 +8,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,8 @@ class PgVectorVectorStoreConfigTest {
     private VectorStore pgVectorVectorStore;
     @Resource
     private LoveAppDocumentLoader loveAppDocumentLoader;
+    @Resource
+    private MyKeyWordEnricher myKeyWordEnricher;
 
     @Test
     void pgVectorVectorStore() {
@@ -28,11 +31,17 @@ class PgVectorVectorStoreConfigTest {
 //                new Document("The World is Big and Salvation Lurks Around the Corner"),
 //                new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
         List<Document> documentList = loveAppDocumentLoader.loadMarkdown();
-        if (documentList.size() > 10){
-            for (Document document : documentList) {
-                pgVectorVectorStore.add(List.of(document));
+        documentList = myKeyWordEnricher.enrichDocuments(documentList);
+        if (documentList.size() > 10) {
+            List<Document> documents = new ArrayList<>(10);
+            for (int i = 1; i <= documentList.size(); i++) {
+                documents.add(documentList.get(i - 1));
+                if (i % 10 == 0 || i == documentList.size()) {
+                    pgVectorVectorStore.add(documents);
+                    documents.clear();
+                }
             }
-        }else {
+        } else {
             pgVectorVectorStore.add(documentList);
         }
 
