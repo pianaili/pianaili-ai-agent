@@ -16,6 +16,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
@@ -151,7 +152,24 @@ public class LoveApp {
 //                                loveAppVectorStore,"健康"
 //                        )
 //                )
-                .advisors(new MyLoggerAdvisor())
+                .call()
+                .chatResponse();
+        String content = response.getResult().getOutput().getText();
+        log.info("content:{}", content);
+        return content;
+    }
+
+    //AI 调用工具的能力
+    @Resource
+    private ToolCallback[] allTools;
+
+    public String doChatWithTools(String message,String chatId) {
+        ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .toolCallbacks(allTools)
                 .call()
                 .chatResponse();
         String content = response.getResult().getOutput().getText();

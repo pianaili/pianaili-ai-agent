@@ -16,4 +16,10 @@ class QueryRewriterTest {
         String RewriteUserQuery = queryRewriter.doQueryRewrite("输入用户的提示词");
 
     }
+
+    @Test
+    void doQueryTransform() {
+        String result = queryRewriter.doQueryTransform("你好，世界！");
+        System.out.println(result);
+    }
 }
