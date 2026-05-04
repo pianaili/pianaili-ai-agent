@@ -17,6 +17,7 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
@@ -111,7 +112,7 @@ public class LoveApp {
 
     public String doChatWithRAG(String message,String chatId) {
         //重写用户的message
-        String rewriteMessage = queryRewriter.doQueryRewrite(message);
+//        String rewriteMessage = queryRewriter.doQueryRewrite(message);
 
         // 1. 构建 VectorStoreDocumentRetriever
         DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
@@ -136,7 +137,7 @@ public class LoveApp {
         ChatResponse response = chatClient
                 .prompt()
                 //输入重写后的用户消息
-                .user(rewriteMessage)
+                .user(message)
                 //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 //添加本地的RAG向量知识库
@@ -163,6 +164,12 @@ public class LoveApp {
     @Resource
     private ToolCallback[] allTools;
 
+    /**
+     * 调用工具的能力
+     * @param message
+     * @param chatId
+     * @return
+     */
     public String doChatWithTools(String message,String chatId) {
         ChatResponse response = chatClient
                 .prompt()
@@ -170,6 +177,29 @@ public class LoveApp {
                 //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .toolCallbacks(allTools)
+                .call()
+                .chatResponse();
+        String content = response.getResult().getOutput().getText();
+        log.info("content:{}", content);
+        return content;
+    }
+
+    @Resource
+    private ToolCallbackProvider toolCallbackProvider;
+
+    /**
+     * AI调用Mcp服务
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public String doChatWithMcp(String message,String chatId) {
+        ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .toolCallbacks(toolCallbackProvider) //调用Mcp服务
                 .call()
                 .chatResponse();
         String content = response.getResult().getOutput().getText();

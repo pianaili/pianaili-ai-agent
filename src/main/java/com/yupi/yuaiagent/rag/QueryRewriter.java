@@ -90,7 +90,7 @@ public class QueryRewriter {
 //        String q = "待翻译文本";
         String from = "auto";
         String to = "en";
-        String vocabId = "您的用户词表ID";
+        String vocabId = "";
 
         return new HashMap<String, String[]>() {{
             put("q", new String[]{q});
