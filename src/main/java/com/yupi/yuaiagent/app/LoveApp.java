@@ -20,6 +20,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class LoveApp {
     public LoveApp(ChatModel dashscopeChatModel) {
         // 初始化基于文件的对话记忆
         String fileDir = System.getProperty("user.dir") + "/tmp/chat-memory";
-        FileBasedChatMemory chatMemory = new FileBasedChatMemory(fileDir);
+        ChatMemory chatMemory = new FileBasedChatMemory(fileDir);
          //修改1：使用MessageWindowChatMemory替代InMemoryChatMemory
 //        ChatMemory chatMemory = MessageWindowChatMemory.builder()
 //                .maxMessages(10)
@@ -76,6 +77,23 @@ public class LoveApp {
         String content = response.getResult().getOutput().getText();
         log.info("content:{}", content);
         return content;
+    }
+
+    /**
+     * AI 基础对话，支持多轮对话记忆
+     * 流式传输，响应式编程
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public Flux<String> doChatByStream(String message,String chatId) {
+        return chatClient
+                .prompt()
+                .user(message)
+                //以前的两个常量不存在了，换成ChatMemory.CONVERSATION_ID
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .stream()
+                .content();
     }
 
     record LoveReport(String title, List<String> suggestions) {
