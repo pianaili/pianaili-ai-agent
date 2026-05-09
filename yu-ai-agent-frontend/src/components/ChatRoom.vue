@@ -233,7 +233,9 @@ function messageKey(m, i) {
           </div>
         </div>
       </main>
+    </div>
 
+    <footer class="chat-input">
       <Transition name="nav-fade">
         <div v-show="showNavButtons" class="nav-buttons">
           <button
@@ -256,9 +258,6 @@ function messageKey(m, i) {
           </button>
         </div>
       </Transition>
-    </div>
-
-    <footer class="chat-input">
       <div class="chat-input-inner">
         <textarea
           v-model="input"
@@ -574,11 +573,12 @@ function messageKey(m, i) {
   cursor: not-allowed;
 }
 
-/* 导航按钮：fixed 定位紧贴消息发送框上方，不随聊天内容滚动 */
+/* 导航按钮：相对固定底栏绝对定位，紧贴输入区上方，不随消息列表或页面滚动 */
 .nav-buttons {
-  position: fixed;
+  position: absolute;
   right: clamp(0.75rem, 4vw, 1.5rem);
-  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  bottom: 100%;
+  margin-bottom: 0.45rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
