@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import AiAvatar from './AiAvatar.vue'
 import UserAvatar from './UserAvatar.vue'
 
@@ -24,29 +24,93 @@ const emit = defineEmits(['send'])
 
 const input = ref('')
 const listEl = ref(null)
+const isNearBottom = ref(true)
+const SCROLL_THRESHOLD = 80
 
-const aiMetaLabel = computed(() => {
-  if (props.aiAvatarVariant === 'love') return 'AI · 恋爱导师'
-  if (props.aiAvatarVariant === 'manus') return 'AI · 超级智能体'
-  return 'AI'
-})
+// 导航按钮：手动滚动时出现，3 秒无操作后消失
+const showNavButtons = ref(false)
+let navTimer = null
+let isProgrammaticScroll = false
 
-function scrollToBottom() {
-  nextTick(() => {
-    const el = listEl.value
-    if (el) el.scrollTop = el.scrollHeight
+function showNavWithTimer() {
+  showNavButtons.value = true
+  clearTimeout(navTimer)
+  navTimer = setTimeout(() => {
+    showNavButtons.value = false
+  }, 3000)
+}
+
+// wheel / touchstart 一定是用户主动操作，直接显示按钮
+function handleWheel() {
+  showNavWithTimer()
+}
+
+function handleTouchStart() {
+  showNavWithTimer()
+}
+
+function handleScroll() {
+  const el = listEl.value
+  if (!el) return
+  isNearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD
+
+  // 兜底：非程序触发的 scroll 也显示按钮
+  if (isProgrammaticScroll) return
+  showNavWithTimer()
+}
+
+function scrollToLatest() {
+  if (!isNearBottom.value) return
+  const el = listEl.value
+  if (!el || !el.lastElementChild) return
+  isProgrammaticScroll = true
+  el.lastElementChild.scrollIntoView({ block: 'end' })
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      isProgrammaticScroll = false
+    })
   })
 }
 
+function scrollToTop() {
+  const el = listEl.value
+  if (!el) return
+  isProgrammaticScroll = true
+  el.scrollTo({ top: 0, behavior: 'smooth' })
+  setTimeout(() => {
+    isProgrammaticScroll = false
+  }, 600)
+}
+
+function scrollToBottom() {
+  const el = listEl.value
+  if (!el || !el.lastElementChild) return
+  isProgrammaticScroll = true
+  el.lastElementChild.scrollIntoView({ block: 'end' })
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      isProgrammaticScroll = false
+    })
+  })
+}
+
+// 监听到有新气泡或内容变化时，DOM 已更新完毕再滚动 (flush: 'post')
 watch(
   () => props.messages,
-  () => scrollToBottom(),
-  { deep: true },
+  () => scrollToLatest(),
+  { deep: true, flush: 'post' },
 )
 
+// loading 启动时强制回到底部（用户发新消息）
 watch(
   () => props.loading,
-  () => scrollToBottom(),
+  (loading) => {
+    if (loading) {
+      isNearBottom.value = true
+      scrollToLatest()
+    }
+  },
+  { flush: 'post' },
 )
 
 function onSubmit() {
@@ -104,7 +168,15 @@ function messageKey(m, i) {
 
       <p v-if="error" class="banner-error" role="alert">{{ error }}</p>
 
-      <main ref="listEl" class="chat-list" role="log" aria-live="polite">
+      <main
+        ref="listEl"
+        class="chat-list"
+        role="log"
+        aria-live="polite"
+        @scroll="handleScroll"
+        @wheel="handleWheel"
+        @touchstart="handleTouchStart"
+      >
         <div
           v-for="(m, i) in messages"
           :key="messageKey(m, i)"
@@ -161,6 +233,29 @@ function messageKey(m, i) {
           </div>
         </div>
       </main>
+
+      <Transition name="nav-fade">
+        <div v-show="showNavButtons" class="nav-buttons">
+          <button
+            type="button"
+            class="nav-btn"
+            aria-label="滚动到顶部"
+            title="回到顶部"
+            @click="scrollToTop"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button
+            type="button"
+            class="nav-btn"
+            aria-label="滚动到底部"
+            title="回到底部"
+            @click="scrollToBottom"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </Transition>
     </div>
 
     <footer class="chat-input">
@@ -477,6 +572,55 @@ function messageKey(m, i) {
 .send:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* 导航按钮：fixed 定位紧贴消息发送框上方，不随聊天内容滚动 */
+.nav-buttons {
+  position: fixed;
+  right: clamp(0.75rem, 4vw, 1.5rem);
+  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 20;
+}
+
+.nav-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--room-border, rgba(255, 255, 255, 0.12));
+  background: var(--room-footer-bg, rgba(10, 12, 18, 0.88));
+  color: var(--room-fg, rgba(255, 255, 255, 0.75));
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--room-accent, #38bdf8);
+  color: #0b1020;
+  border-color: transparent;
+  transform: scale(1.08);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Vue Transition */
+.nav-fade-enter-active {
+  transition: opacity 0.3s ease;
+}
+.nav-fade-leave-active {
+  transition: opacity 0.35s ease;
+}
+.nav-fade-enter-from,
+.nav-fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 720px) {
