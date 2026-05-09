@@ -27,69 +27,49 @@ const listEl = ref(null)
 const isNearBottom = ref(true)
 const SCROLL_THRESHOLD = 80
 
-// 导航按钮：手动滚动时出现，3 秒无操作后消失
-const showNavButtons = ref(false)
-let navTimer = null
-let isProgrammaticScroll = false
-
-function showNavWithTimer() {
-  showNavButtons.value = true
-  clearTimeout(navTimer)
-  navTimer = setTimeout(() => {
-    showNavButtons.value = false
-  }, 3000)
-}
-
-// wheel / touchstart 一定是用户主动操作，直接显示按钮
-function handleWheel() {
-  showNavWithTimer()
-}
-
-function handleTouchStart() {
-  showNavWithTimer()
-}
+const isProgrammaticScroll = ref(false)
 
 function handleScroll() {
+  if (isProgrammaticScroll.value) return
   const el = listEl.value
   if (!el) return
   isNearBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD
-
-  // 兜底：非程序触发的 scroll 也显示按钮
-  if (isProgrammaticScroll) return
-  showNavWithTimer()
 }
 
 function scrollToLatest() {
   if (!isNearBottom.value) return
   const el = listEl.value
   if (!el || !el.lastElementChild) return
-  isProgrammaticScroll = true
+  isProgrammaticScroll.value = true
   el.lastElementChild.scrollIntoView({ block: 'end' })
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      isProgrammaticScroll = false
+      isProgrammaticScroll.value = false
     })
   })
 }
 
 function scrollToTop() {
+  isNearBottom.value = false
+  isProgrammaticScroll.value = true
   const el = listEl.value
-  if (!el) return
-  isProgrammaticScroll = true
-  el.scrollTo({ top: 0, behavior: 'smooth' })
+  if (el) {
+    el.scrollTop = 0
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   setTimeout(() => {
-    isProgrammaticScroll = false
+    isProgrammaticScroll.value = false
   }, 600)
 }
 
 function scrollToBottom() {
   const el = listEl.value
   if (!el || !el.lastElementChild) return
-  isProgrammaticScroll = true
+  isProgrammaticScroll.value = true
   el.lastElementChild.scrollIntoView({ block: 'end' })
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      isProgrammaticScroll = false
+      isProgrammaticScroll.value = false
     })
   })
 }
@@ -174,8 +154,6 @@ function messageKey(m, i) {
         role="log"
         aria-live="polite"
         @scroll="handleScroll"
-        @wheel="handleWheel"
-        @touchstart="handleTouchStart"
       >
         <div
           v-for="(m, i) in messages"
@@ -236,28 +214,26 @@ function messageKey(m, i) {
     </div>
 
     <footer class="chat-input">
-      <Transition name="nav-fade">
-        <div v-show="showNavButtons" class="nav-buttons">
-          <button
-            type="button"
-            class="nav-btn"
-            aria-label="滚动到顶部"
-            title="回到顶部"
-            @click="scrollToTop"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-          </button>
-          <button
-            type="button"
-            class="nav-btn"
-            aria-label="滚动到底部"
-            title="回到底部"
-            @click="scrollToBottom"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        </div>
-      </Transition>
+      <div class="nav-buttons">
+        <button
+          type="button"
+          class="nav-btn"
+          aria-label="滚动到顶部"
+          title="回到顶部"
+          @click="scrollToTop"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button
+          type="button"
+          class="nav-btn"
+          aria-label="滚动到底部"
+          title="回到底部"
+          @click="scrollToBottom"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
       <div class="chat-input-inner">
         <textarea
           v-model="input"
@@ -609,18 +585,6 @@ function messageKey(m, i) {
 
 .nav-btn:active {
   transform: scale(0.95);
-}
-
-/* Vue Transition */
-.nav-fade-enter-active {
-  transition: opacity 0.3s ease;
-}
-.nav-fade-leave-active {
-  transition: opacity 0.35s ease;
-}
-.nav-fade-enter-from,
-.nav-fade-leave-to {
-  opacity: 0;
 }
 
 @media (max-width: 720px) {
