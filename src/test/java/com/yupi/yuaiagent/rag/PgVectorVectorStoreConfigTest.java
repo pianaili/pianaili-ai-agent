@@ -49,7 +49,11 @@ class PgVectorVectorStoreConfigTest {
 //        pgVectorVectorStore.add(documents);
 
         // 相似度查询
-        List<Document> results = this.pgVectorVectorStore.similaritySearch(SearchRequest.builder().query("我已经结婚了，但是婚后关系不太亲密，该怎么办？").topK(3).build());
+        List<Document> results = this.pgVectorVectorStore
+                .similaritySearch(SearchRequest.builder()
+                        .query("我已经结婚了，但是婚后关系不太亲密，该怎么办？")
+                        .topK(3)
+                        .build());
         Assertions.assertNotNull(results);
     }
 }

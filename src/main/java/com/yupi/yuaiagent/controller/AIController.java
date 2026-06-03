@@ -27,7 +27,7 @@ public class AIController {
     @Resource
     private ToolCallbackProvider mcpAsyncToolCallbacks;
 
-    @Resource
+    @Resource(name = "dashScopeChatModel")
     private ChatModel dashscopeChatModel;
     /**
      * 恋爱大师

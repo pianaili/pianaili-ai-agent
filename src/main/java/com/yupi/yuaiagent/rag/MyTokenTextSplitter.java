@@ -11,6 +11,7 @@ import java.util.List;
  * 不建议使用，会将文档切分的乱七八糟，影响文档的连续性和完整性
  */
 @Component
+@Deprecated
 class MyTokenTextSplitter {
 
     public List<Document> splitDocuments(List<Document> documents) {

@@ -5,6 +5,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,7 +22,7 @@ public class LoveAppVectorStoreConfig {
     private MyKeyWordEnricher   myKeyWordEnricher;
 
     @Bean
-    VectorStore loveAppVectorStore(EmbeddingModel embeddingModel) {
+    VectorStore loveAppVectorStore(@Qualifier("dashscopeEmbeddingModel") EmbeddingModel embeddingModel) {
         //构建一个普通向量存储对象
         SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(embeddingModel).build();
         //获取document对象集合

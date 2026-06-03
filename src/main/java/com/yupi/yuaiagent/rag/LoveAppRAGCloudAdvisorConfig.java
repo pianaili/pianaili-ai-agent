@@ -28,7 +28,9 @@ public class LoveAppRAGCloudAdvisorConfig {
         //获取阿里云RAG向量知识库检索到的文档，文档召回
         DocumentRetriever retriever = new DashScopeDocumentRetriever(dashScopeApi,
                 DashScopeDocumentRetrieverOptions.builder()
-                        .withIndexName(KnowledgeBase)
+                        .indexName(KnowledgeBase)
+                        .sparseSimilarityTopK(3) //稠密检索，根据语义匹配
+                        .sparseSimilarityTopK(3) //稀疏检索，根据关键词匹配
                         .build());
         //通过召回的文档构建检索增强Advisor
         return RetrievalAugmentationAdvisor.builder()

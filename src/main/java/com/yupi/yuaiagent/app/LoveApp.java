@@ -14,11 +14,17 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
+import org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -39,7 +45,7 @@ public class LoveApp {
      * 初始化ChatClient客户端
      * @param dashscopeChatModel
      */
-    public LoveApp(ChatModel dashscopeChatModel) {
+    public LoveApp(@Qualifier("dashScopeChatModel") ChatModel dashscopeChatModel) {
         // 初始化基于文件的对话记忆
         String fileDir = System.getProperty("user.dir") + "/tmp/chat-memory";
         ChatMemory chatMemory = new FileBasedChatMemory(fileDir);
@@ -145,12 +151,19 @@ public class LoveApp {
                 .build();
 
         //构建pgVectorStoreDocumentRetriever对象
-        VectorStoreDocumentRetriever pgVectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
+        DocumentRetriever pgVectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
+//                .filterExpression(new FilterExpressionBuilder().eq("key","value").build()) //元数据标签过滤
                 .vectorStore(pgVectorVectorStore)
+                .similarityThreshold(0.75)
+                .topK(3)
                 .build();
         //构建检索增强顾问
-        RetrievalAugmentationAdvisor pgVectorStoreAdvisor = RetrievalAugmentationAdvisor.builder()
+        Advisor pgVectorStoreAdvisor = RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(pgVectorStoreDocumentRetriever)
+//                .queryExpander() //还可以添加查询拓展器
+                .queryAugmenter(ContextualQueryAugmenter.builder()
+                        .allowEmptyContext(true)
+                        .build()) //当检索内容为空时，没有知识库支持，也要回答用户的问题
                 .build();
         ChatResponse response = chatClient
                 .prompt()

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.rag.Query;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
 import org.springframework.stereotype.Component;
@@ -32,7 +33,7 @@ public class QueryRewriter {
      *
      * @param dashscopeChatModel
      */
-    public QueryRewriter(ChatModel dashscopeChatModel) {
+    public QueryRewriter(@Qualifier("dashScopeChatModel") ChatModel dashscopeChatModel) {
         ChatClient.Builder builder = ChatClient.builder(dashscopeChatModel);
         //构建查询重写转换器
         queryTransformer = RewriteQueryTransformer.builder()

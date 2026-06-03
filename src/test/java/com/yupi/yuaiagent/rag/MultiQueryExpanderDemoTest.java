@@ -1,4 +1,4 @@
-package com.yupi.yuaiagent.demo.rag;
+package com.yupi.yuaiagent.rag;
 
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
@@ -8,11 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class MultiQueryExpanderDemoTest {
     @Resource
-    private MultiQueryExpanderDemo  multiQueryExpanderDemo;
+    private MultiQueryExpanderDemo multiQueryExpanderDemo;
 
     @Test
     void expand() {

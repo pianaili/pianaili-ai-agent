@@ -1,10 +1,11 @@
-package com.yupi.yuaiagent.demo.rag;
+package com.yupi.yuaiagent.rag;
 
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,8 +19,8 @@ public class MultiQueryExpanderDemo {
 
     private final ChatClient.Builder chatClientBuilder;
 
-    public MultiQueryExpanderDemo(ChatModel dashscopeChatModel) {
-        chatClientBuilder = ChatClient.builder(dashscopeChatModel);
+    public MultiQueryExpanderDemo(@Qualifier("ollamaChatModel") ChatModel ollamaChatModel) {
+        chatClientBuilder = ChatClient.builder(ollamaChatModel);
     }
 
     public List<Query> expand(String queryStr) {
@@ -27,7 +28,6 @@ public class MultiQueryExpanderDemo {
                 .chatClientBuilder(chatClientBuilder)
                 .numberOfQueries(3)
                 .build();
-        List<Query> queries = queryExpander.expand(new Query(queryStr));
-        return queries;
+        return queryExpander.expand(new Query(queryStr));
     }
 }
