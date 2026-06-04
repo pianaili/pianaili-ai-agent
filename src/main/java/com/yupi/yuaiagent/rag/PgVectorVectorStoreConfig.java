@@ -23,7 +23,7 @@ public class PgVectorVectorStoreConfig {
     @Bean
     public VectorStore pgVectorVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel dashscopeEmbeddingModel) {
 
-        PgVectorStore pgVectorStore = PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
+        return PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
 //                .dimensions(1536)                    // Optional: defaults to model dimensions or 1536
                 .distanceType(COSINE_DISTANCE)       // Optional: defaults to COSINE_DISTANCE
                 .indexType(HNSW)                     // Optional: defaults to HNSW
@@ -32,6 +32,5 @@ public class PgVectorVectorStoreConfig {
                 .vectorTableName("vector_store")     // Optional: defaults to "vector_store"
                 .maxDocumentBatchSize(10)              // dashscope API batch limit is 10
                 .build();
-        return pgVectorStore;
     }
 }
