@@ -115,7 +115,7 @@ public abstract class BaseAgent {
             //记录消息上下文
             messageList.add(new UserMessage(userPrompt));
             //保存结果列表
-            List<String> results = new ArrayList<>();
+//            List<String> results = new ArrayList<>();
             try {
                 //执行循环
                 for (int i = 0; i < maxSteps && state != AgentState.FINISHED; i++) {
@@ -124,14 +124,14 @@ public abstract class BaseAgent {
                     log.info("Executing step {}/{}", stepNumber, maxSteps);
                     //单步执行
                     String stepResult = step();
-                    results.add(stepResult);
+//                    results.add(stepResult);
                     //输出当前每一步的结果
                     if (!safeSend(sseEmitter, stepResult)) {
                         break;
                     }
                     if (currentStep >= maxSteps) {
                         state = AgentState.FINISHED;
-                        results.add("Terminated: Reached max steps (" + maxSteps + ")");
+//                        results.add("Terminated: Reached max steps (" + maxSteps + ")");
                         safeSend(sseEmitter, "执行结束：达到最大步骤（" + maxSteps + "）");
                     }
                 }
@@ -154,7 +154,7 @@ public abstract class BaseAgent {
             this.cleanup();
             log.warn("SSE connect timed out");
         });
-        //设置超时回调
+        //设置完成时回调
         sseEmitter.onCompletion(() -> {
             if (this.state == AgentState.RUNNING){
                 this.state = AgentState.FINISHED;
@@ -172,10 +172,17 @@ public abstract class BaseAgent {
     public abstract String step();
 
     /**
-     * 清理资源
+     * 清理资源，重置代理到初始状态以便复用。
+     * 子类可以重写此方法来清理额外的资源（如数据库连接、文件句柄等），
+     * 重写时建议调用 super.cleanup()。
      */
     protected void cleanup(){
-        //子类可以重写此方法来清理资源
+        // 重置状态，使代理可以再次使用
+        this.state = AgentState.IDLE;
+        // 重置步骤计数器
+        this.currentStep = 0;
+        // 清理对话历史，释放内存
+        this.messageList.clear();
     }
 
     /**

@@ -135,4 +135,16 @@ public class ToolCallAgent extends ReActAgent{
         log.info(results);
         return results;
     }
+
+    /**
+     * 清理资源，重置代理到初始状态以便复用。
+     * 在父类清理基础上，额外清除工具调用响应引用。
+     */
+    @Override
+    protected void cleanup() {
+        // 清除工具调用响应，释放内存并避免脏状态影响下次运行
+        this.toolCallChatResponse = null;
+        // 调用父类清理（重置状态、步骤计数器、消息列表）
+        super.cleanup();
+    }
 }

@@ -36,10 +36,10 @@ public class AliReactAgent {
                 .name("LoveAgent")
                 .model(dashScopeChatModel)
                 .saver(new MemorySaver()) //基于内存的对话记忆
+                .systemPrompt(SYSTEM_PROMPT)
+                .hooks(new RAGMessagesHook(pgVectorVectorStore))
                 .tools(allTools)
                 .toolCallbackProviders(mcpAsyncToolCallbacks)
-                .hooks(new RAGMessagesHook(pgVectorVectorStore))
-                .systemPrompt(SYSTEM_PROMPT)
                 .build();
     }
 
